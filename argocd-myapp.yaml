@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: myapp
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: appimage=nginx:1.22.0
+    argocd-image-updater.argoproj.io/appimage.force-update: "true"
+    argocd-image-updater.argoproj.io/appimage.update-strategy: semver
+spec:
+  project: default
+  source:
+    helm:
+      repoURL: https://BrutalHex.github.io/ops-website/
+      chart: myapp
+      targetRevision: 0.0.2
+    values: |
+      app:
+        namespace: default
+        name: myapp
+        image: "{{ .Values.appimage }}"
+      ingress:
+        className: "nginx"
+        url: "myap.tmp.walletpan.com"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=true
