@@ -7,21 +7,69 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://BrutalHex.github.io/ops-website/
+    repoURL: https://BrutalHex.github.io/ops-vectordb/
     chart: myapp
-    targetRevision: 0.x.x
+    targetRevision: 1.x.x
     helm:
+      releaseName: mysample
       valuesObject:
-        app:
-          namespace: default
-          name: myapp
-          image: nginx:1.22.0
-        ingress:
-          className: "nginx"
-          url: "myapp.go.walletpan.com"
+        gateway:
+          namespace: istio-system
+          name: waypoint
+          url: qdb.go.walletpan.com
+        qdrant:
+          apiKey: false
+          readOnlyApiKey: false
+          replicaCount: 1
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          persistence:
+            accessModes: ["ReadWriteOnce"]
+            size: 10Gi
+            annotations: {}
+            storageClassName: ebs-gp3
+          config:
+            cluster:
+              enabled: true
+              p2p:
+                port: 6335
+                enable_tls: false
+              consensus:
+                tick_period_ms: 100
+            log_level: INFO
+          service:
+            type: ClusterIP
+            additionalLabels:
+              app: qdrant
+              istio.io/use-waypoint: waypoint
+            annotations: {}
+            loadBalancerIP: ""
+            ports:
+              - name: http
+                port: 6333
+                targetPort: 6333
+                protocol: TCP
+                checksEnabled: true
+                # appProtocol: http
+              - name: grpc
+                port: 6334
+                targetPort: 6334
+                protocol: TCP
+                checksEnabled: false
+                # appProtocol: http2
+              - name: p2p
+                port: 6335
+                targetPort: 6335
+                protocol: TCP
+                checksEnabled: false
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: test-space
   syncPolicy:
     automated:
       selfHeal: true
